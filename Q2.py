@@ -1,4 +1,4 @@
-import streamlit as st
+
 import matplotlib.pyplot as plt
 from torchvision import datasets, transforms
 import torch
@@ -9,7 +9,7 @@ import pickle
 import numpy as np
 
 def main():
-    st.title("EMNIST Classification")
+    print("EMNIST Classification")
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1,), (0.3,))
@@ -39,7 +39,7 @@ def main():
         plt.yticks([])
         plt.xticks([])
 
-    st.pyplot(fig)
+    plt.show()
 
     return trainLoader,testLoader
 
@@ -141,7 +141,7 @@ def train(trainLoader,testLoader,epochs = 5):
             train_losses.append(train_loss / len(trainLoader))
             test_losses.append(test_loss.cpu().numpy() / len(testLoader))
             accuracys.append(accuracy / len(testLoader))
-            st.write("Epoch: {}/{}  ".format(epoch + 1, epoch),
+            print("Epoch: {}/{}  ".format(epoch + 1, epoch),
                   "Training loss: {:.4f}  ".format(train_loss / len(trainLoader)),
                   "Testing loss: {:.4f}  ".format(test_loss / len(testLoader)),
                   "Test accuracy: {:.4f}  ".format(accuracy / len(testLoader)))
@@ -160,60 +160,61 @@ def train(trainLoader,testLoader,epochs = 5):
     plt.plot(test_losses, label="Testing Loss")
     plt.legend()
     plt.grid()
-    st.pyplot(fig)
+    plt.show()
 
 def test(trainLoader,device):
     with open('model.pkl', 'rb') as f:
         model = pickle.load(f)
     with open('model_stats.pkl', 'rb') as f:
         model_stats = pickle.load(f)
-    st.subheader("Actual model")
-    st.write(model)
+    print("--------------------Actual model--------------------------")
+    print(model)
 
     saved_train_losses = model_stats['Training loss']
     saved_test_losses = model_stats['Testing loss']
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Training and testing loss functions")
-        fig = plt.figure(figsize=(5, 5))
-        plt.plot(saved_train_losses, label="Training Loss")
-        plt.plot(saved_test_losses, label="Testing loss")
-        plt.legend()
-        plt.grid()
-        st.pyplot(fig)
 
-    with col2:
-        st.subheader("Prediction")
-        training_data = enumerate(trainLoader)
-        batch_idx, (images, labels) = next(training_data)
+    print("Training and testing loss functions")
+    fig = plt.figure(figsize=(5, 5))
+    plt.plot(saved_train_losses, label="Training Loss")
+    plt.plot(saved_test_losses, label="Testing loss")
+    plt.legend()
+    plt.grid()
+    plt.show()
 
-        img = images[2]
-        img = img.to(device)
-        img = img.view(-1, 1, 28, 28)
-        with torch.no_grad():
-            logits = model.forward(img)
 
-        probabilities = F.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
-        fig, (ax1, ax2) = plt.subplots(figsize=(6, 8), ncols=2)
-        ax1.imshow(img.view(1, 28, 28).detach().cpu().numpy().squeeze())
-        ax1.axis('off')
-        ax2.barh(np.arange(1,27), probabilities, color='b')
-        ax2.set_yticks(np.arange(1,27))
-        ax2.set_title('Model Prediction')
-        st.pyplot(fig)
+    print("Prediction")
+    training_data = enumerate(trainLoader)
+    batch_idx, (images, labels) = next(training_data)
+
+    img = images[2]
+    img = img.to(device)
+    img = img.view(-1, 1, 28, 28)
+    with torch.no_grad():
+        logits = model.forward(img)
+
+    probabilities = F.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
+    fig, (ax1, ax2) = plt.subplots(figsize=(6, 8), ncols=2)
+    ax1.imshow(img.view(1, 28, 28).detach().cpu().numpy().squeeze())
+    ax1.axis('off')
+    ax2.barh(np.arange(1,27), probabilities, color='b')
+    ax2.set_yticks(np.arange(1,27))
+    ax2.set_title('Model Prediction')
+    plt.show()
 
 if __name__=="__main__":
     device = ("cuda" if torch.cuda.is_available() else "cpu")
     trainLoader,testLoader = main()
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        epochs = st.sidebar.slider("Epochs",1,50,10)
-        btn = st.sidebar.button("Train again")
-    if btn:
-        train(trainLoader,testLoader,epochs)
-    with col2:
-        btn_test = st.button("Random Test")
 
-    if btn_test:
+    while True:
+        user_input = input("please select:\n 1-Train \n 2-Test \n 1 or 2 :")
+        if user_input == "1" or user_input == "2":
+            print(f"option selecter {user_input}")
+            break
+
+
+    if user_input == "1":
+        epochs = 20
+        train(trainLoader,testLoader,epochs)
+    elif user_input == "2":
         test(trainLoader,device)
